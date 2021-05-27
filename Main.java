@@ -7,6 +7,7 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
@@ -26,6 +27,7 @@ public class Main extends Application {
     BorderPane BP;
     HBox upperBox;
     HBox lowerBox;
+    HistogramAlphaBet histogram;
 
     @Override public void start(Stage stage) throws IOException {
         /* Setup scene: */
@@ -39,23 +41,20 @@ public class Main extends Application {
         Text upperText = new Text("Pie Chart of file: ");
         inputFile = new TextField();
         inputFile.setPrefWidth(250);
-        inputFile.setOnAction(this::processFileName);
+        inputFile.setOnAction(event -> {
+            try {
+                processFileName(event);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
         upperBox = new HBox(upperText, inputFile);
         upperBox.setAlignment(Pos.BASELINE_CENTER);
         upperBox.setStyle("-fx-padding: 10;");
 
         /* Setup Pie Chart */
-//        HistogramAlphaBet newChart = new HistogramAlphaBet("alice.txt");
-//        charChart = newChart.drawPieChart(26);
-
-        ObservableList<PieChart.Data> pieChartData =
-                FXCollections.observableArrayList(
-                        new PieChart.Data("Grapefruit: " + 13, 13),
-                        new PieChart.Data("Oranges: " + 25, 25),
-                        new PieChart.Data("Plums: " + 10, 10),
-                        new PieChart.Data("Pears: " + 22, 22),
-                        new PieChart.Data("Apples: " + 30, 30));
-        charChart = new PieChart(pieChartData);
+        histogram = new HistogramAlphaBet("alice.txt");
+        charChart = histogram.drawPieChart(26);
 
         /* Setup Lower HBox */
         Text lowerText = new Text("Enter # of Letter Frequencies to Display: ");
@@ -74,6 +73,13 @@ public class Main extends Application {
     }
 
     private void resetChart(PieChart newChart) {
+//        newChart.getData().forEach(data -> {
+//            String percentage = String.format("%.2f%%", data.getPieValue());
+//            Tooltip toolTip = new Tooltip(percentage);
+//            Tooltip.install(data.getNode(), toolTip);
+//        });
+        newChart.setLegendVisible(false);
+        newChart.setClockwise(false);
         ((Group) scene.getRoot()).getChildren().clear();
         BP.setTop(upperBox);
         BP.setBottom(lowerBox);
@@ -81,13 +87,10 @@ public class Main extends Application {
         ((Group) scene.getRoot()).getChildren().add(BP);
     }
 
-    private void processFileName(ActionEvent event) {
-        ObservableList<PieChart.Data> pieChartData =
-                FXCollections.observableArrayList(
-                        new PieChart.Data("Oranges: " + 25, 25),
-                        new PieChart.Data("Plums: " + 10, 10),
-                        new PieChart.Data("Pears: " + 22, 22));
-        charChart = new PieChart(pieChartData);
+    private void processFileName(ActionEvent event) throws IOException {
+        histogram.updateFile(inputFile.getText());
+        //charChart = histogram.drawPieChart(Integer.parseInt(numSlices.getText()));
+        charChart = histogram.drawPieChart(26);
         resetChart(charChart);
     }
 
