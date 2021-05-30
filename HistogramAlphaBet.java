@@ -11,28 +11,27 @@ import javafx.scene.chart.*;
 
 import static java.util.stream.Collectors.toMap;
 
-
 public class HistogramAlphaBet {
-    String filename; // file name of file to be searched
-    int totalChars;  // Total characters in file to be searched
-    Map<String, Double> freq; // Unsorted frequency map of characters in the file
-    Map<String, Double> sortedFrequency; // Sorted frequency map of characters in the file
-    Map<String, Double> alphaFrequency; // Alphabetized frequency map of characters in the file
+    private String filename;                     // file name of file to be searched
+    private int totalChars;                      // Total characters in file to be searched
+    private Map<String, Double> freq;            // Unsorted frequency map of characters in the file
+    private Map<String, Double> sortedFrequency; // Sorted frequency map of characters in the file
+    private Map<String, Double> alphaFrequency;  // Alphabetized frequency map of characters in the file
 
     HistogramAlphaBet(String filename) throws IOException {
         this.filename = filename;
-        getMap();
+        getMaps();
     }
 
-    public void getMap() throws IOException {
+    private void getMaps() throws IOException {
         Path fileName = Path.of(filename);
         String actual = Files.readString(fileName);
-        String s = actual.replaceAll("[^a-zA-Z]", "").toUpperCase();
-        totalChars = s.length();
+        String string = actual.replaceAll("[^a-zA-Z]", "").toUpperCase(); // Only keep letters and capitalize them
+        totalChars = string.length();
 
-        freq = new HashMap<>();
+        this.freq = new HashMap<>();
         for(int i = 0; i < totalChars; i++) {
-            String Ch = Character.toString(s.charAt(i));
+            String Ch = Character.toString(string.charAt(i));
             incrementFrequency(freq, Ch);
         }
 
@@ -49,18 +48,21 @@ public class HistogramAlphaBet {
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, LinkedHashMap::new));
     }
 
-    public static <K> void incrementFrequency(Map<K, Double> m, K Key) {
-        m.putIfAbsent(Key, 0.0);
-        m.put(Key, m.get(Key) + 1.0);
+    private static <K> void incrementFrequency(Map<K, Double> map, K Key) {
+        map.putIfAbsent(Key, 0.0);
+        map.put(Key, map.get(Key) + 1.0);
     }
 
-    public Chart drawPieChart(int CharsToPrint, Boolean alphabetize, Boolean displayFrequency, Boolean isPieChart) {
+    public Chart drawChart(int CharsToPrint, Boolean alphabetize, Boolean displayFrequency, Boolean isPieChart) {
         Map<String, Double> temp;
         if(alphabetize)
             temp = alphaFrequency;
         else
             temp = sortedFrequency;
+        /* When returning a PieChart */
         if(isPieChart){
+            if(CharsToPrint == 0)
+                return new PieChart();
             ObservableList pieChartData = FXCollections.observableArrayList();
 
             for (Map.Entry<String, Double> mapElement : temp.entrySet()) {
@@ -75,9 +77,13 @@ public class HistogramAlphaBet {
             pieChart.setClockwise(false);
             return pieChart;
         }
+        
+        /* When returning a BarChart */
         else{
             CategoryAxis xAxis = new CategoryAxis();
             NumberAxis yAxis = new NumberAxis();
+            if(CharsToPrint == 0)
+                return new BarChart<>(xAxis, yAxis);
             if(displayFrequency)
                 yAxis.setLabel("Frequency");
             else
@@ -98,5 +104,4 @@ public class HistogramAlphaBet {
             return barChart;
         }
     }
-
 }
