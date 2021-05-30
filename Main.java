@@ -75,6 +75,7 @@ public class Main extends Application {
         numLetters.setPrefWidth(50);
         numLetters.setAlignment(Pos.CENTER);
         numLetters.setOnAction(this::processNumberInput);
+        numLetters.setText("26"); // Default is to display all letters
 
         HBox lowerHBox = new HBox(lowerText, numLetters);
         lowerHBox.setAlignment(Pos.BASELINE_CENTER);
