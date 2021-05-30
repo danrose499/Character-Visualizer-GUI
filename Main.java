@@ -1,5 +1,9 @@
 package sample;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
@@ -16,43 +20,32 @@ import javafx.stage.Stage;
 import javafx.scene.chart.*;
 import javafx.scene.Group;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 public class Main extends Application {
 
-    String filename;
-    int slices = 26;
-    Boolean alphabetize = false;
-    Boolean isPieChart = true;
-    Boolean freqDisplay = true;
-    Text errorMSG;
-    TextField numSlices;
-    TextField inputFile;
-    Chart charChart;
     Scene scene;
-    BorderPane BP;
-    HBox upperHBox;
-    HBox lowerHBox;
-    HBox radioHBox;
-    VBox lowerBox;
-    VBox upperBox;
-    VBox sortSelect;
-    VBox graphSelect;
-    VBox labelSelect;
-    HistogramAlphaBet histogram;
+    BorderPane BP;               // BorderPane to be added to scene
+    VBox lowerBox, upperBox;     // Top and Bottom panes of BP BorderPane
+    Chart charChart;             // Chart displaying letter frequencies
+    String filename;             // Stores name of file to read
+    TextField inputFile;         // TextField to get filename
+    Text errorMSG;               // Error message that displays when filename does not appear in the directory
+    int lettersToDisplay = 26;   // Number of letters to display in Chart (default is to display all letters)
+    TextField numLetters;        // TextField to get the number of letters to display
+    Boolean alphabetize = false; // Determines whether Chart is sorted alphabetically or by frequency
+    Boolean isPieChart  = true;  // Determines whether Chart is returned as a PieChart or a BarChart
+    Boolean freqDisplay = true;  // Determines if labels should be letter frequency or percent
+    HistogramAlphaBet histogram; // Class to get PieChart of BarChart of filename
 
     @Override public void start(Stage stage) {
         /* Setup scene: */
         scene = new Scene(new Group());
-        stage.setTitle("Character Frequency Pie Chart");
+        stage.setTitle("Letter Frequency Chart");
         stage.setWidth(500);
         stage.setHeight(580);
         BP = new BorderPane();
 
         /* Setup Upper Pane (upperBox): */
-        Text upperText = new Text("Pie Chart of file: ");
+        Text upperText = new Text("Enter file name: ");
         inputFile = new TextField();
         inputFile.setPrefWidth(250);
         inputFile.setOnAction(event -> {
@@ -62,25 +55,28 @@ public class Main extends Application {
                 e.printStackTrace();
             }
         });
-        upperHBox = new HBox(upperText, inputFile);
+
+        HBox upperHBox = new HBox(upperText, inputFile);
         upperHBox.setAlignment(Pos.BASELINE_CENTER);
         upperHBox.setStyle("-fx-padding: 10;");
-        errorMSG = new Text();
+
+        errorMSG = new Text(); // errorMSG text is set in processFilename
         errorMSG.setFill(Color.RED);
+
         upperBox = new VBox(upperHBox, errorMSG);
         upperBox.setAlignment(Pos.TOP_CENTER);
 
         /* Setup Middle Pane (Pie charChart) */
-        charChart = new PieChart();
+        charChart = new PieChart(); // charChart is empty until user set inputFile
 
         /* Setup lowerBox HBox */
-        Text lowerText = new Text("Enter # of Letter Frequencies to Display: ");
-        numSlices = new TextField();
-        numSlices.setPrefWidth(50);
-        numSlices.setAlignment(Pos.CENTER);
-        numSlices.setOnAction(this::processSliceInput);
+        Text lowerText = new Text("Enter number of Letter Frequencies to Display: ");
+        numLetters = new TextField();
+        numLetters.setPrefWidth(50);
+        numLetters.setAlignment(Pos.CENTER);
+        numLetters.setOnAction(this::processNumberInput);
 
-        lowerHBox = new HBox(lowerText, numSlices);
+        HBox lowerHBox = new HBox(lowerText, numLetters);
         lowerHBox.setAlignment(Pos.BASELINE_CENTER);
 
         /* Setup graphSelect RadioButton */
@@ -90,10 +86,10 @@ public class Main extends Application {
         pie.setSelected(true);
         RadioButton bar = new RadioButton("Bar Chart ");
         bar.setToggleGroup(graphTG);
-        graphSelect = new VBox(pie, bar);
+        VBox graphSelect = new VBox(pie, bar);
         pie.selectedProperty().addListener((obs, wasPreviouslySelected, isNowSelected) -> {
             isPieChart = isNowSelected;
-            charChart = histogram.drawPieChart(slices, alphabetize, freqDisplay, isPieChart);
+            charChart = histogram.drawChart(lettersToDisplay, alphabetize, freqDisplay, isPieChart);
             resetChart(charChart);
         });
 
@@ -104,10 +100,10 @@ public class Main extends Application {
         freqSort.setSelected(true);
         RadioButton alphaSort = new RadioButton("Sort Alphabetically ");
         alphaSort.setToggleGroup(sortTG);
-        sortSelect = new VBox(freqSort, alphaSort);
+        VBox sortSelect = new VBox(freqSort, alphaSort);
         alphaSort.selectedProperty().addListener((obs, wasPreviouslySelected, isNowSelected) -> {
             alphabetize = isNowSelected;
-            charChart = histogram.drawPieChart(slices, alphabetize, freqDisplay, isPieChart);
+            charChart = histogram.drawChart(lettersToDisplay, alphabetize, freqDisplay, isPieChart);
             resetChart(charChart);
         });
 
@@ -118,15 +114,15 @@ public class Main extends Application {
         displayFrequency.setSelected(true);
         RadioButton displayPercent = new RadioButton("Display Percent ");
         displayPercent.setToggleGroup(labelTG);
-        labelSelect = new VBox(displayFrequency, displayPercent);
+        VBox labelSelect = new VBox(displayFrequency, displayPercent);
         displayFrequency.selectedProperty().addListener((obs, wasPreviouslySelected, isNowSelected) -> {
             freqDisplay = isNowSelected;
-            charChart = histogram.drawPieChart(slices, alphabetize, freqDisplay, isPieChart);
+            charChart = histogram.drawChart(lettersToDisplay, alphabetize, freqDisplay, isPieChart);
             resetChart(charChart);
         });
 
         /* Setup Bottom Pane (lowerBox) */
-        radioHBox = new HBox(graphSelect, sortSelect, labelSelect);
+        HBox radioHBox = new HBox(graphSelect, sortSelect, labelSelect);
         radioHBox.setAlignment(Pos.BASELINE_CENTER);
         radioHBox.setStyle("-fx-padding: 10;");
         lowerBox = new VBox(lowerHBox, radioHBox);
@@ -138,12 +134,6 @@ public class Main extends Application {
     }
 
     private void resetChart(Chart newChart) {
-//        newChart.getData().forEach(data -> {
-//            String percentage = String.format("%.2f%%", data.getPieValue());
-//            Tooltip toolTip = new Tooltip(percentage);
-//            Tooltip.install(data.getNode(), toolTip);
-//        });
-
         newChart.setLegendVisible(false);
         ((Group) scene.getRoot()).getChildren().clear();
         BP.setTop(upperBox);
@@ -155,21 +145,21 @@ public class Main extends Application {
     private void processFileName() throws IOException {
         filename = inputFile.getText();
         Path path = Path.of(filename);
-        if(Files.notExists(path)) {
+        if(Files.notExists(path)) { // errorMSG is only displayed when file can't be found in directory
             errorMSG.setText("Error: \"" + filename + "\" does not exist!");
             errorMSG.setVisible(true);
         }
         else {
             errorMSG.setVisible(false);
             histogram = new HistogramAlphaBet(filename);
-            charChart = histogram.drawPieChart(slices, alphabetize, freqDisplay, isPieChart);
+            charChart = histogram.drawChart(lettersToDisplay, alphabetize, freqDisplay, isPieChart);
         }
         resetChart(charChart);
     }
 
-    private void processSliceInput(ActionEvent event) {
-        slices = Integer.parseInt(numSlices.getText());
-        charChart = histogram.drawPieChart(slices, alphabetize, freqDisplay, isPieChart);
+    private void processNumberInput(ActionEvent event) {
+        lettersToDisplay = Integer.parseInt(numLetters.getText());
+        charChart = histogram.drawChart(lettersToDisplay, alphabetize, freqDisplay, isPieChart);
         resetChart(charChart);
     }
 
