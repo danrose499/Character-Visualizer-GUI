@@ -1,4 +1,4 @@
-# Character Visualizer GUI
+# Letter Visualizer GUI
 This JavaFX application displays information about the letter frequencies of a chosen text file. The user can choose which text file to analyze by typing its name in the TextField at the top of the window. The chosen file needs to be in the same directory as the application. If the application can't find the selected file, an error message will appear beneath the TextField:
 
 ![errorChart](https://user-images.githubusercontent.com/57165307/120226431-30936580-c215-11eb-8ddb-ce407950295b.png)
